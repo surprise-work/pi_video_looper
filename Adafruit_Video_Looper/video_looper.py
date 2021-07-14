@@ -104,6 +104,13 @@ class VideoLooper:
             self._keyboard_thread = threading.Thread(target=self._handle_keyboard_shortcuts, daemon=True)
             self._keyboard_thread.start()
 
+
+        # Configure GPIO 10 to accept inputs
+        # You can wire Pin 1 to Pin 10, with a switch inbetween to trigger it
+        GPIO.setwarnings(False)
+        GPIO.setmode(GPIO.BOARD)
+        GPIO.setup(10, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+
     def _print(self, message):
         """Print message to standard output if console output is enabled."""
         if self._console_output:
@@ -137,12 +144,12 @@ class VideoLooper:
         except ValueError:
             return False
 
-    def _build_playlist(self):
+    def _build_playlist(self, name = 'playlist'):
         """Try to build a playlist (object) from a playlist (file).
         Falls back to an auto-generated playlist with all files.
         """
-        if self._config.has_option('playlist', 'path'):
-            playlist_path = self._config.get('playlist', 'path')
+        if self._config.has_option(name, 'path'):
+            playlist_path = self._config.get(name, 'path')
             if playlist_path != "":
                 if os.path.isabs(playlist_path):
                     if not os.path.isfile(playlist_path):
@@ -355,8 +362,18 @@ class VideoLooper:
         self._prepare_to_run_playlist(playlist)
         self._set_hardware_volume()
         movie = playlist.get_next(self._is_random)
+
+        # Get playlist of thanks
+        thankyous = self._build_playlist('thankyous')
+        self._prepare_to_run_playlist()
+        thankyou = thankyous.get_next(self._is_random)
         # Main loop to play videos in the playlist and listen for file changes.
         while self._running:
+            # Detect an input on GPIO pin 10.
+            if GPIO.input(10) == GPIO.HIGH:
+                self._print("GPIO 10 was triggered.")
+                self._player.play(thankyou, loop=-1, vol = self._sound_vol)
+
             # Load and play a new movie if nothing is playing.
             if not self._player.is_playing() and not self._playbackStopped:
                 if movie is not None: #just to avoid errors
