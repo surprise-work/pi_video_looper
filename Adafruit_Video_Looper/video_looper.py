@@ -365,7 +365,7 @@ class VideoLooper:
 
         # Get playlist of thanks
         thankyous = self._build_playlist('thankyous')
-        self._prepare_to_run_playlist()
+        self._prepare_to_run_playlist(thankyous)
         thankyou = thankyous.get_next(self._is_random)
         # Main loop to play videos in the playlist and listen for file changes.
         while self._running:
