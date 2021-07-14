@@ -370,9 +370,9 @@ class VideoLooper:
         # Main loop to play videos in the playlist and listen for file changes.
         while self._running:
             # Detect an input on GPIO pin 10.
-            if GPIO.input(10) == GPIO.HIGH:
-                self._print("GPIO 10 was triggered.")
-                self._player.play(thankyou, loop=-1, vol = self._sound_vol)
+            #if GPIO.input(10) == GPIO.HIGH:
+            #    self._print("GPIO 10 was triggered.")
+            #    self._player.play(thankyou, loop=-1, vol = self._sound_vol)
 
             # Load and play a new movie if nothing is playing.
             if not self._player.is_playing() and not self._playbackStopped:
