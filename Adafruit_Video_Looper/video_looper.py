@@ -115,9 +115,11 @@ class VideoLooper:
         GPIO.setup(10, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 
         # This is a MS based timer for testing pulse frequency. It's crude, I'm sure.
-        self._timer_a = self._set_time()
-        self._timer_b = self._set_time()
-        self._timer = 0
+        self.timer_a = self._set_time() # Time start
+        self.timer_b = self._set_time() # Time stop
+        self.timer = 0 # Time diff
+        self.last_v = 0
+        self.pulse_count = 0
 
     def _set_time(self):
         return datetime.datetime.now()
@@ -125,6 +127,17 @@ class VideoLooper:
     def _get_ms(self, x, y):
         time_diff = (x - y)
         return time_diff.total_seconds() * 1000
+
+    def reset_timer(self):
+        self.timer_a = self._set_time()
+        self.timer_b = self._set_time()
+
+    def timer_start(self):
+        self.timer_a = self._set_time()
+
+    def timer_stop(self):
+        self.timer_b = self._set_time()
+        self.timer = self._get_ms(self.timer_b, self.timer_a)
 
     def _print(self, message):
         """Print message to standard output if console output is enabled."""
@@ -389,16 +402,25 @@ class VideoLooper:
             # TL;DR because I'm tired... 
             # Will constantly set _b and get the diff between _a and _b. If that diff surpasses 1000, or 1s, it will reset.
             # This is to test for a continuous pulse on GPIO pin 10, once ever 100ms.
-            self._timer_b = self._set_time()
-            self._timer = self._get_ms(self._timer_b, self._timer_a)
-            if self._timer > 1000:
-                self._timer_a = self._set_time()
+            if GPIO.input(10):
+                if self.last_v == 0:
+                    self.timer_start()
+                self.last_v = 1
+            else:
+                if self.last_v == 1:
+                    self.timer_stop()
+                self.last_v = 0
 
-            # Detect an input on GPIO pin 10.
-            if GPIO.input(10) == GPIO.HIGH:
+            if self.timer >= 0.1:
+                print(self.timer)
+
+            if self.timer >= 90:
                 self._print("GPIO 10 was triggered.")
                 self._timer_a = self._set_time()
                 self._player.play(thankyou, loop=None, vol = self._sound_vol)
+            elif self.last_v == 1:
+                self._player.play(thankyou, loop=None, vol = self._sound_vol)
+
 
             # Load and play a new movie if nothing is playing.
             if not self._player.is_playing() and not self._playbackStopped:
