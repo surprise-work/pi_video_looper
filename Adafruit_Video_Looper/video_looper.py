@@ -364,8 +364,18 @@ class VideoLooper:
         self._set_hardware_volume()
         movie = playlist.get_next(self._is_random)
 
+        # Get playlist of thanks
+        thankyous = self._build_playlist('thankyous')
+        self._prepare_to_run_playlist(thankyous)
+        thankyou = thankyous.get_next(self._is_random)
+
         # Main loop to play videos in the playlist and listen for file changes.
         while self._running:
+            # Detect an input on GPIO pin 10.
+            if GPIO.input(10) == GPIO.HIGH:
+                self._print("GPIO 10 was triggered.")
+                self._player.play(thankyou, loop=None, vol = self._sound_vol)
+
             # Load and play a new movie if nothing is playing.
             if not self._player.is_playing() and not self._playbackStopped:
                 if movie is not None: #just to avoid errors
