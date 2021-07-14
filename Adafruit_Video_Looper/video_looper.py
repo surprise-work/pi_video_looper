@@ -404,23 +404,10 @@ class VideoLooper:
             # This is to test for a continuous pulse on GPIO pin 10, once ever 100ms.
             if GPIO.input(10):
                 if self.last_v == 0:
-                    self.timer_start()
+                    self._player.play(thankyou, loop=None, vol = self._sound_vol)
                 self.last_v = 1
             else:
-                if self.last_v == 1:
-                    self.timer_stop()
                 self.last_v = 0
-
-            if self.timer >= 0.1:
-                print(self.timer)
-
-            if self.timer >= 90:
-                self._print("GPIO 10 was triggered.")
-                self._timer_a = self._set_time()
-                self._player.play(thankyou, loop=None, vol = self._sound_vol)
-            elif self.last_v == 1:
-                self._player.play(thankyou, loop=None, vol = self._sound_vol)
-
 
             # Load and play a new movie if nothing is playing.
             if not self._player.is_playing() and not self._playbackStopped:
