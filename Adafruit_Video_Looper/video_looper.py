@@ -12,7 +12,9 @@ import signal
 import time
 import pygame
 import threading
+
 import RPi.GPIO as GPIO
+import datetime
 
 from .alsa_config import parse_hw_device
 from .model import Playlist, Movie
@@ -111,6 +113,18 @@ class VideoLooper:
         GPIO.setwarnings(False)
         GPIO.setmode(GPIO.BOARD)
         GPIO.setup(10, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+
+        # This is a MS based timer for testing pulse frequency. It's crude, I'm sure.
+        self._timer_a = self._set_time()
+        self._timer_b = self._set_time()
+        self._timer = 0
+
+    def _set_time(self):
+        return datetime.datetime.now()
+
+    def _get_ms(self, x, y):
+        time_diff = (x - y)
+        return time_diff.total_seconds() * 1000
 
     def _print(self, message):
         """Print message to standard output if console output is enabled."""
@@ -371,9 +385,19 @@ class VideoLooper:
 
         # Main loop to play videos in the playlist and listen for file changes.
         while self._running:
+            # Manage our timer
+            # TL;DR because I'm tired... 
+            # Will constantly set _b and get the diff between _a and _b. If that diff surpasses 1000, or 1s, it will reset.
+            # This is to test for a continuous pulse on GPIO pin 10, once ever 100ms.
+            self._timer_b = self._set_time()
+            self._timer = self._get_ms(self._timer_b, self._timer_a)
+            if self._timer > 1000:
+                self._timer_a = self._set_time()
+
             # Detect an input on GPIO pin 10.
             if GPIO.input(10) == GPIO.HIGH:
                 self._print("GPIO 10 was triggered.")
+                self._timer_a = self._set_time()
                 self._player.play(thankyou, loop=None, vol = self._sound_vol)
 
             # Load and play a new movie if nothing is playing.
