@@ -112,14 +112,10 @@ class VideoLooper:
         # You can wire Pin 1 to Pin 10, with a switch inbetween to trigger it
         GPIO.setwarnings(False)
         GPIO.setmode(GPIO.BOARD)
-        GPIO.setup(10, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+        GPIO.setup(12, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 
         # This is a MS based timer for testing pulse frequency. It's crude, I'm sure.
-        self.timer_a = self._set_time() # Time start
-        self.timer_b = self._set_time() # Time stop
-        self.timer = 0 # Time diff
-        self.last_v = 0
-        self.pulse_count = 0
+        self.last_in = GPIO.input(12)
 
     def _set_time(self):
         return datetime.datetime.now()
@@ -398,16 +394,15 @@ class VideoLooper:
 
         # Main loop to play videos in the playlist and listen for file changes.
         while self._running:
-            # Manage our timer
-            # TL;DR because I'm tired... 
-            # Will constantly set _b and get the diff between _a and _b. If that diff surpasses 1000, or 1s, it will reset.
-            # This is to test for a continuous pulse on GPIO pin 10, once ever 100ms.
-            if GPIO.input(10):
-                if self.last_v == 0:
-                    self._player.play(thankyou, loop=None, vol = self._sound_vol)
-                self.last_v = 1
-            else:
-                self.last_v = 0
+            # Test for pulse from pin 12.
+            # Quest requires 33k resistor leading into Pin 12.
+            # One yellow to pin 1, one yellow to pin 12.
+            if GPIO.input(12):
+                new_in = GPIO.input(12)
+                if new_in != self.last_in:
+                    if new_in == 1:
+                        self._player.play(thankyou, loop=None, vol = self._sound_vol)
+                    self.last_in = GPIO.input(12)
 
             # Load and play a new movie if nothing is playing.
             if not self._player.is_playing() and not self._playbackStopped:
