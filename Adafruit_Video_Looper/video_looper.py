@@ -401,6 +401,7 @@ class VideoLooper:
                 new_in = GPIO.input(12)
                 if new_in != self.last_in:
                     if new_in == 1:
+                        thankyou = thankyous.get_next(self._is_random)
                         self._player.play(thankyou, loop=None, vol = self._sound_vol)
                     self.last_in = GPIO.input(12)
 
